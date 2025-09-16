@@ -1,0 +1,590 @@
+========================================
+RELATÓRIO COMPLETO DE ANÁLISE DE TELAS
+Sistema de Gestão de Projetos de TI
+========================================
+
+Data: 16/09/2025
+Versão: 1.0
+Tecnologias: React 19.1.1 + TypeScript + Vite + React Router
+
+========================================
+RESUMO EXECUTIVO
+========================================
+
+O sistema possui 9 telas principais bem estruturadas, seguindo padrões consistentes de design e navegação. 
+Todas as telas utilizam um layout comum com Sidebar e Header, garantindo uma experiência de usuário unificada.
+A estrutura atual usa dados mockados, necessitando integração com backend PostgreSQL via Supabase.
+
+ESTRUTURA GERAL:
+- Layout: Sidebar + Header fixos
+- Navegação: React Router v7.9.1
+- Estilo: Tailwind CSS com tema neutro
+- Estados: React hooks locais
+- Dados: Mock data estático
+
+========================================
+1. TELA DE LOGIN (LoginScreen.tsx)
+========================================
+
+ESTRUTURA ATUAL:
+✅ Formulário de login com email/senha
+✅ Validação básica de campos obrigatórios
+✅ Estado de loading durante autenticação
+✅ Modo de teste para desenvolvimento
+✅ Checkbox "Lembrar-me"
+✅ Tratamento de erros de autenticação
+
+FUNCIONALIDADES IMPLEMENTADAS:
+- Validação de email/senha
+- Mock de autenticação (dev@user.com / password)
+- Loading spinner
+- Mensagens de erro
+- Modo teste para bypass
+
+PROBLEMAS IDENTIFICADOS:
+❌ Não há integração com backend real
+❌ Token de autenticação não é armazenado
+❌ Não há "Esqueci minha senha"
+❌ Não há registro de usuários
+❌ Validação de email apenas por HTML5
+
+TABELAS NECESSÁRIAS:
+1. users
+   - id (UUID, PRIMARY KEY)
+   - email (VARCHAR, UNIQUE, NOT NULL)
+   - password_hash (VARCHAR, NOT NULL)
+   - name (VARCHAR, NOT NULL)
+   - avatar_url (VARCHAR)
+   - created_at (TIMESTAMP)
+   - updated_at (TIMESTAMP)
+   - last_login (TIMESTAMP)
+   - is_active (BOOLEAN DEFAULT true)
+
+2. user_sessions
+   - id (UUID, PRIMARY KEY)
+   - user_id (UUID, FOREIGN KEY)
+   - token (VARCHAR, UNIQUE)
+   - expires_at (TIMESTAMP)
+   - created_at (TIMESTAMP)
+
+MELHORIAS NECESSÁRIAS:
+- Integrar com Supabase Auth
+- Implementar JWT tokens
+- Adicionar "Esqueci minha senha"
+- Melhorar validações
+- Persistir sessão com localStorage
+
+========================================
+2. DASHBOARD (Dashboard.tsx)
+========================================
+
+ESTRUTURA ATUAL:
+✅ Cards de resumo (4 métricas principais)
+✅ Card de sprint ativo
+✅ Lista de projetos ativos
+✅ Interações CRM
+✅ Tarefas do dia
+✅ Resumo financeiro
+✅ Layout responsivo em grid
+
+FUNCIONALIDADES IMPLEMENTADAS:
+- Exibição de métricas gerais
+- Visualização de progresso de sprint
+- Lista de projetos com status
+- Histórico de interações CRM
+- Agenda de tarefas diárias
+
+PROBLEMAS IDENTIFICADOS:
+❌ Dados estáticos (mock)
+❌ Não há refresh automático
+❌ Não há filtros por período
+❌ Não há drill-down nas métricas
+❌ Gráficos são estáticos
+
+TABELAS NECESSÁRIAS:
+1. dashboard_metrics
+   - id (UUID, PRIMARY KEY)
+   - user_id (UUID, FOREIGN KEY)
+   - metric_type (VARCHAR) -- 'projects', 'tasks', 'clients', 'revenue'
+   - value (DECIMAL)
+   - period (VARCHAR) -- 'daily', 'weekly', 'monthly'
+   - date (DATE)
+   - created_at (TIMESTAMP)
+
+MELHORIAS NECESSÁRIAS:
+- Conectar com dados reais
+- Implementar refresh automático
+- Adicionar filtros de período
+- Criar gráficos interativos
+- Implementar drill-down
+
+========================================
+3. TELA DE PROJETOS (ProjectsScreen.tsx)
+========================================
+
+ESTRUTURA ATUAL:
+✅ Lista de todos os projetos
+✅ Botão "Novo Projeto"
+✅ Campo de busca
+✅ Layout de cards com informações essenciais
+✅ Indicadores visuais de status
+
+FUNCIONALIDADES IMPLEMENTADAS:
+- Listagem de projetos
+- Navegação para criação
+- Interface de busca (não funcional)
+- Exibição de progresso e status
+
+PROBLEMAS IDENTIFICADOS:
+❌ Busca não funciona
+❌ Não há filtros por status/cliente
+❌ Não há ordenação
+❌ Não há paginação
+❌ Não há ações em massa
+❌ Cards não são clicáveis para detalhes
+
+TABELAS NECESSÁRIAS:
+1. projects
+   - id (UUID, PRIMARY KEY)
+   - name (VARCHAR, NOT NULL)
+   - description (TEXT)
+   - client_id (UUID, FOREIGN KEY)
+   - value (DECIMAL)
+   - progress (INTEGER DEFAULT 0)
+   - deadline (DATE)
+   - status (VARCHAR) -- 'active', 'completed', 'paused', 'cancelled'
+   - created_at (TIMESTAMP)
+   - updated_at (TIMESTAMP)
+   - created_by (UUID, FOREIGN KEY)
+
+2. project_team
+   - id (UUID, PRIMARY KEY)
+   - project_id (UUID, FOREIGN KEY)
+   - user_id (UUID, FOREIGN KEY)
+   - role (VARCHAR) -- 'lead', 'developer', 'designer'
+   - assigned_at (TIMESTAMP)
+
+MELHORIAS NECESSÁRIAS:
+- Implementar busca funcional
+- Adicionar filtros e ordenação
+- Criar página de detalhes do projeto
+- Implementar paginação
+- Adicionar ações de edição/exclusão
+
+========================================
+4. NOVO PROJETO (NewProjectScreen.tsx)
+========================================
+
+ESTRUTURA ATUAL:
+✅ Formulário básico de criação
+✅ Campos: nome, cliente, valor, prazo
+✅ Botões de cancelar/salvar
+✅ Layout centrado e limpo
+
+FUNCIONALIDADES IMPLEMENTADAS:
+- Interface de formulário
+- Campos básicos de projeto
+- Navegação de cancelamento
+
+PROBLEMAS IDENTIFICADOS:
+❌ Formulário não submete dados
+❌ Não há validação de campos
+❌ Campo cliente é texto livre (deveria ser select)
+❌ Não há campos para descrição, equipe, etc.
+❌ Não há upload de arquivos/documentos
+❌ Não redireciona após salvar
+
+TABELAS NECESSÁRIAS:
+(Usar tabela 'projects' definida acima)
+
+MELHORIAS NECESSÁRIAS:
+- Implementar submit funcional
+- Adicionar validações
+- Criar select de clientes
+- Adicionar mais campos (descrição, equipe)
+- Implementar upload de documentos
+- Adicionar redirecionamento pós-criação
+
+========================================
+5. TELA DE CLIENTES (ClientsScreen.tsx)
+========================================
+
+ESTRUTURA ATUAL:
+✅ Lista de todos os clientes
+✅ Botão "Novo Cliente"
+✅ Campo de busca
+✅ Cards com informações do cliente
+✅ Indicadores de status (ativo/inativo/lead)
+
+FUNCIONALIDADES IMPLEMENTADAS:
+- Listagem de clientes
+- Interface de busca (não funcional)
+- Navegação para detalhes (via click no card)
+- Status visual dos clientes
+
+PROBLEMAS IDENTIFICADOS:
+❌ Busca não funciona
+❌ Botão "Novo Cliente" não leva a lugar algum
+❌ Não há filtros por status
+❌ Não há ordenação por nome/valor
+❌ Não há paginação
+
+TABELAS NECESSÁRIAS:
+1. clients
+   - id (UUID, PRIMARY KEY)
+   - name (VARCHAR, NOT NULL)
+   - company (VARCHAR, NOT NULL)
+   - email (VARCHAR, UNIQUE)
+   - phone (VARCHAR)
+   - avatar_url (VARCHAR)
+   - status (VARCHAR) -- 'active', 'inactive', 'lead'
+   - total_value (DECIMAL DEFAULT 0)
+   - created_at (TIMESTAMP)
+   - updated_at (TIMESTAMP)
+   - created_by (UUID, FOREIGN KEY)
+
+MELHORIAS NECESSÁRIAS:
+- Implementar busca funcional
+- Criar tela de novo cliente
+- Adicionar filtros por status
+- Implementar ordenação
+- Adicionar paginação
+
+========================================
+6. DETALHES DO CLIENTE (ClientDetailScreen.tsx)
+========================================
+
+ESTRUTURA ATUAL:
+✅ Header com foto e informações do cliente
+✅ Seção de projetos relacionados
+✅ Histórico de comunicação
+✅ Lista de lembretes
+✅ Layout responsivo em grid
+✅ Tratamento de cliente não encontrado
+
+FUNCIONALIDADES IMPLEMENTADAS:
+- Exibição completa de dados do cliente
+- Projetos vinculados automaticamente
+- Histórico estático de comunicações
+- Sistema de lembretes
+
+PROBLEMAS IDENTIFICADOS:
+❌ Histórico de comunicação é estático
+❌ Não há como adicionar nova comunicação
+❌ Lembretes não são editáveis
+❌ Não há como editar dados do cliente
+❌ Projetos relacionados são filtrados por nome (frágil)
+
+TABELAS NECESSÁRIAS:
+1. communication_history
+   - id (UUID, PRIMARY KEY)
+   - client_id (UUID, FOREIGN KEY)
+   - user_id (UUID, FOREIGN KEY)
+   - type (VARCHAR) -- 'call', 'email', 'meeting', 'chat'
+   - summary (TEXT)
+   - contact_person (VARCHAR)
+   - date (TIMESTAMP)
+   - created_at (TIMESTAMP)
+
+2. client_reminders
+   - id (UUID, PRIMARY KEY)
+   - client_id (UUID, FOREIGN KEY)
+   - user_id (UUID, FOREIGN KEY)
+   - text (TEXT, NOT NULL)
+   - date (DATE)
+   - is_completed (BOOLEAN DEFAULT false)
+   - created_at (TIMESTAMP)
+
+MELHORIAS NECESSÁRIAS:
+- Implementar CRUD de comunicações
+- Tornar lembretes editáveis
+- Adicionar edição de dados do cliente
+- Melhorar vinculação de projetos
+- Adicionar anexos às comunicações
+
+========================================
+7. TELA DE TAREFAS (TasksScreen.tsx)
+========================================
+
+ESTRUTURA ATUAL:
+✅ Sistema de abas (Lista, Calendário, Backlog)
+✅ Kanban board (A Fazer, Em Progresso, Concluído)
+✅ Vista de calendário para tarefas agendadas
+✅ Backlog separado
+✅ Botão "Nova Tarefa"
+✅ Contadores por coluna
+
+FUNCIONALIDADES IMPLEMENTADAS:
+- Múltiplas visualizações de tarefas
+- Organização por status
+- Filtros visuais por aba
+- Calendário de entregas
+
+PROBLEMAS IDENTIFICADOS:
+❌ Botão "Nova Tarefa" não funciona
+❌ Tarefas não são arrastáveis (drag & drop)
+❌ Não há filtros por projeto/prioridade
+❌ Calendário não é interativo
+❌ Não há edição inline de tarefas
+❌ Backlog não tem priorização
+
+TABELAS NECESSÁRIAS:
+1. tasks
+   - id (UUID, PRIMARY KEY)
+   - title (VARCHAR, NOT NULL)
+   - description (TEXT)
+   - project_id (UUID, FOREIGN KEY)
+   - assigned_to (UUID, FOREIGN KEY)
+   - status (VARCHAR) -- 'todo', 'in-progress', 'done', 'backlog'
+   - priority (VARCHAR) -- 'high', 'medium', 'low'
+   - estimate_hours (DECIMAL)
+   - actual_hours (DECIMAL)
+   - due_date (DATE)
+   - start_time (TIME)
+   - duration (INTEGER) -- em minutos
+   - category (VARCHAR)
+   - created_at (TIMESTAMP)
+   - updated_at (TIMESTAMP)
+   - created_by (UUID, FOREIGN KEY)
+
+MELHORIAS NECESSÁRIAS:
+- Implementar criação de tarefas
+- Adicionar drag & drop
+- Criar filtros avançados
+- Tornar calendário interativo
+- Implementar edição inline
+- Adicionar sistema de priorização
+
+========================================
+8. TELA FINANCEIRA (FinancialScreen.tsx)
+========================================
+
+ESTRUTURA ATUAL:
+✅ Resumo executivo (5 métricas principais)
+✅ Lista de próximos pagamentos
+✅ Histórico de recebimentos
+✅ Análise de custos mensais
+✅ Métricas de rentabilidade
+✅ Metas financeiras com progresso
+✅ Botão "Novo Recebimento"
+
+FUNCIONALIDADES IMPLEMENTADAS:
+- Dashboard financeiro completo
+- Múltiplas seções organizadas
+- Formatação de moeda brasileira
+- Indicadores visuais de status
+- Análise de ROI e rentabilidade
+
+PROBLEMAS IDENTIFICADOS:
+❌ Todos os dados são estáticos
+❌ Não há filtros por período
+❌ Botão "Novo Recebimento" não funciona
+❌ Não há gráficos temporais
+❌ Custos são categorizados manualmente
+❌ Não há exportação de relatórios
+
+TABELAS NECESSÁRIAS:
+1. payments
+   - id (UUID, PRIMARY KEY)
+   - project_id (UUID, FOREIGN KEY)
+   - client_id (UUID, FOREIGN KEY)
+   - amount (DECIMAL, NOT NULL)
+   - description (VARCHAR)
+   - method (VARCHAR) -- 'PIX', 'Transferência', 'Cartão'
+   - status (VARCHAR) -- 'sent', 'pending', 'scheduled', 'received'
+   - due_date (DATE)
+   - paid_date (DATE)
+   - created_at (TIMESTAMP)
+   - updated_at (TIMESTAMP)
+
+2. costs
+   - id (UUID, PRIMARY KEY)
+   - category (VARCHAR, NOT NULL)
+   - name (VARCHAR, NOT NULL)
+   - amount (DECIMAL, NOT NULL)
+   - frequency (VARCHAR) -- 'monthly', 'yearly', 'one-time'
+   - date (DATE)
+   - created_at (TIMESTAMP)
+
+3. financial_goals
+   - id (UUID, PRIMARY KEY)
+   - user_id (UUID, FOREIGN KEY)
+   - label (VARCHAR, NOT NULL)
+   - target_amount (DECIMAL, NOT NULL)
+   - current_amount (DECIMAL DEFAULT 0)
+   - deadline (DATE)
+   - created_at (TIMESTAMP)
+   - updated_at (TIMESTAMP)
+
+MELHORIAS NECESSÁRIAS:
+- Conectar com dados reais
+- Implementar filtros temporais
+- Criar formulário de recebimentos
+- Adicionar gráficos de tendência
+- Automatizar categorização de custos
+- Implementar exportação de relatórios
+
+========================================
+9. CONTROLE DE SPRINT (SprintControlScreen.tsx)
+========================================
+
+ESTRUTURA ATUAL:
+✅ Resumo da sprint atual
+✅ Gráfico de burndown
+✅ Métricas da sprint
+✅ Kanban board integrado
+✅ Indicadores de progresso
+✅ Análise de esforço (effort)
+
+FUNCIONALIDADES IMPLEMENTADAS:
+- Visão completa da sprint
+- Gráfico burndown com SVG
+- Métricas avançadas (velocidade, qualidade, risco)
+- Kanban integrado
+- Cálculos automáticos de progresso
+
+PROBLEMAS IDENTIFICADOS:
+❌ Dados estáticos de sprint
+❌ Gráfico burndown não é interativo
+❌ Não há histórico de sprints
+❌ Métricas são calculadas manualmente
+❌ Kanban não tem drag & drop
+❌ Não há planejamento de sprint
+
+TABELAS NECESSÁRIAS:
+1. sprints
+   - id (UUID, PRIMARY KEY)
+   - project_id (UUID, FOREIGN KEY)
+   - name (VARCHAR, NOT NULL)
+   - goal (TEXT)
+   - start_date (DATE)
+   - end_date (DATE)
+   - budget (DECIMAL)
+   - estimated_hours (DECIMAL)
+   - spent_hours (DECIMAL DEFAULT 0)
+   - status (VARCHAR) -- 'planning', 'active', 'completed', 'cancelled'
+   - created_at (TIMESTAMP)
+   - updated_at (TIMESTAMP)
+
+2. sprint_tasks
+   - id (UUID, PRIMARY KEY)
+   - sprint_id (UUID, FOREIGN KEY)
+   - task_id (UUID, FOREIGN KEY)
+   - assigned_at (TIMESTAMP)
+
+3. burndown_data
+   - id (UUID, PRIMARY KEY)
+   - sprint_id (UUID, FOREIGN KEY)
+   - date (DATE)
+   - ideal_hours (DECIMAL)
+   - actual_hours (DECIMAL)
+   - created_at (TIMESTAMP)
+
+MELHORIAS NECESSÁRIAS:
+- Conectar com dados reais
+- Tornar gráfico interativo
+- Criar histórico de sprints
+- Automatizar cálculo de métricas
+- Implementar drag & drop no Kanban
+- Adicionar planejamento de sprint
+
+========================================
+ANÁLISE DE CONSISTÊNCIA DE LAYOUT
+========================================
+
+PONTOS POSITIVOS:
+✅ Layout uniforme em todas as telas
+✅ Sidebar e Header consistentes
+✅ Paleta de cores padronizada
+✅ Tipografia consistente
+✅ Espaçamentos uniformes
+✅ Componentes reutilizáveis
+✅ Responsividade implementada
+
+INCONSISTÊNCIAS ENCONTRADAS:
+❌ Alguns botões não seguem o mesmo padrão de tamanho
+❌ Cards têm padding ligeiramente diferentes
+❌ Alguns ícones não estão alinhados
+❌ Estados de loading não são uniformes
+❌ Mensagens de erro têm estilos diferentes
+
+MELHORIAS DE DESIGN:
+- Criar design system mais rigoroso
+- Padronizar todos os componentes de botão
+- Unificar estilos de cards
+- Implementar loading states consistentes
+- Padronizar tratamento de erros
+
+========================================
+RESUMO DE TABELAS NECESSÁRIAS
+========================================
+
+TABELAS PRINCIPAIS (9):
+1. users - Usuários do sistema
+2. clients - Clientes e leads
+3. projects - Projetos
+4. tasks - Tarefas
+5. sprints - Sprints de desenvolvimento
+6. payments - Pagamentos e recebimentos
+7. costs - Custos operacionais
+8. communication_history - Histórico de comunicações
+9. client_reminders - Lembretes de clientes
+
+TABELAS DE RELACIONAMENTO (4):
+10. user_sessions - Sessões de usuário
+11. project_team - Equipe dos projetos
+12. sprint_tasks - Tarefas da sprint
+13. burndown_data - Dados do gráfico burndown
+
+TABELAS DE MÉTRICAS (2):
+14. dashboard_metrics - Métricas do dashboard
+15. financial_goals - Metas financeiras
+
+TOTAL: 15 tabelas
+
+========================================
+PRIORIDADES DE IMPLEMENTAÇÃO
+========================================
+
+FASE 1 - AUTENTICAÇÃO E DADOS BÁSICOS:
+1. Configurar Supabase
+2. Implementar autenticação real
+3. Criar tabelas: users, clients, projects, tasks
+4. Conectar telas básicas com dados reais
+
+FASE 2 - FUNCIONALIDADES CORE:
+1. Implementar CRUD completo
+2. Adicionar busca e filtros
+3. Criar formulários funcionais
+4. Implementar validações
+
+FASE 3 - RECURSOS AVANÇADOS:
+1. Sistema de sprints
+2. Controle financeiro
+3. Métricas e relatórios
+4. Drag & drop
+5. Gráficos interativos
+
+FASE 4 - MELHORIAS DE UX:
+1. Loading states
+2. Otimizações de performance
+3. PWA features
+4. Notificações
+5. Exportação de dados
+
+========================================
+CONCLUSÃO
+========================================
+
+O sistema possui uma base sólida com estrutura bem organizada e design consistente. 
+As principais necessidades são:
+
+1. BACKEND: Integração com Supabase PostgreSQL
+2. FUNCIONALIDADES: Implementar CRUDs faltantes
+3. UX: Melhorar interatividade e feedback
+4. DADOS: Substituir mocks por dados reais
+5. VALIDAÇÕES: Implementar validações robustas
+
+Estimativa de desenvolvimento: 6-8 semanas para implementação completa.
+
+========================================

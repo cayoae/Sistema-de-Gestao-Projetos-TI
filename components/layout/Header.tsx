@@ -4,9 +4,10 @@ import { SearchIcon, BellIcon, MenuIcon } from '../icons/Icons';
 
 interface HeaderProps {
   onMenuClick: () => void;
+  onLogout?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+const Header: React.FC<HeaderProps> = ({ onMenuClick, onLogout }) => {
   return (
     <header className="flex items-center justify-between h-16 bg-white border-b border-neutral-200 px-4 sm:px-6 shrink-0">
       <div className="flex items-center">
@@ -36,6 +37,15 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         <div className="w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center overflow-hidden">
            <img src="https://picsum.photos/id/237/40/40" alt="User Avatar" className="w-full h-full object-cover"/>
         </div>
+        {onLogout && (
+          <button 
+            onClick={onLogout}
+            className="px-3 py-1 text-sm text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100 rounded-md transition-colors"
+            title="Sair"
+          >
+            Sair
+          </button>
+        )}
       </div>
     </header>
   );

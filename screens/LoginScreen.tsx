@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '../lib/supabaseClient';
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
@@ -12,12 +13,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const [error, setError] = useState('');
   const [isTestMode, setIsTestMode] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Test mode bypasses validation and mock API call
+    // Test mode bypasses validation and uses mock authentication
     if (isTestMode) {
       setTimeout(() => {
         onLoginSuccess();
@@ -32,15 +33,28 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       return;
     }
 
-    // Mock API call
-    setTimeout(() => {
-      if (email === 'dev@user.com' && password === 'password') {
+    try {
+      // Real Supabase authentication
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password,
+      });
+
+      if (error) {
+        setError(error.message || 'Erro ao fazer login. Verifique suas credenciais.');
+      } else if (data.user) {
+        // Store session info if remember me is checked
+        if (rememberMe) {
+          localStorage.setItem('supabase.auth.remember', 'true');
+        }
         onLoginSuccess();
-      } else {
-        setError('Email ou senha inválidos.');
       }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Erro inesperado. Tente novamente.');
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
