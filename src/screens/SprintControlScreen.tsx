@@ -1,7 +1,8 @@
-import React from 'react';
-import { mockSprintDetail, mockKanbanTasks, mockBurndownData, mockSprintMetrics } from '../data/mockData';
+import React, { useState, useEffect } from 'react';
 import { KanbanTask, BurndownDataPoint, SprintMetric, SprintDetail } from '../types';
 import KanbanCard from '../components/sprints/KanbanCard';
+import { SprintService, type SprintMetrics } from '../lib/services/sprintService';
+import NewSprintModal from '../components/sprints/NewSprintModal';
 
 const SprintSummary: React.FC<{ sprint: SprintDetail }> = ({ sprint }) => {
     const effortPercentage = sprint.estimatedHours > 0 
@@ -150,27 +151,111 @@ const SprintMetrics: React.FC<{ metrics: SprintMetric[] }> = ({ metrics }) => (
 
 
 const SprintControlScreen: React.FC = () => {
+    const [sprintData, setSprintData] = useState<SprintMetrics | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [lastUpdated, setLastUpdated] = useState<string>('');
+    const [showNewSprintModal, setShowNewSprintModal] = useState(false);
+
+    useEffect(() => {
+        loadSprintData();
+    }, []);
+
+    const loadSprintData = async () => {
+        setLoading(true);
+        setError(null);
+
+        const { data, error } = await SprintService.getSprintMetrics();
+
+        if (error) {
+            setError(error);
+            console.error('Failed to load sprint data:', error);
+        } else if (data) {
+            setSprintData(data);
+            setLastUpdated(new Date().toLocaleTimeString('pt-BR'));
+        }
+
+        setLoading(false);
+    };
+
+    // Get data source
+    const sprintDetail = sprintData?.sprintDetail;
+    const kanbanTasks = sprintData?.kanbanTasks;
+    const burndownData = sprintData?.burndownData;
+    const sprintMetrics = sprintData?.metrics;
+
     return (
         <main className="flex-1 p-6 bg-neutral-100/50 overflow-y-auto">
-            <SprintSummary sprint={mockSprintDetail} />
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                    <BurndownChart data={mockBurndownData} />
-                </div>
+            <div className="flex justify-between items-center mb-6">
                 <div>
-                     <SprintMetrics metrics={mockSprintMetrics} />
+                    <h1 className="text-3xl font-bold text-neutral-800">Controle de Sprint</h1>
+                    {lastUpdated && (
+                    <p className="text-sm text-neutral-500 mt-1">
+                        Última atualização: {lastUpdated}
+                    </p>
+                )}
+                </div>
+                <div className="flex gap-4">
+                    <button
+                        onClick={loadSprintData}
+                        disabled={loading}
+                        className="px-4 py-2 bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                    >
+                        {loading ? 'Carregando...' : 'Atualizar'}
+                    </button>
+                    <button
+                        onClick={() => setShowNewSprintModal(true)}
+                        className="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-sm"
+                    >
+                        + Nova Sprint
+                    </button>
                 </div>
             </div>
 
-            <div className="mt-6">
-                <h2 className="text-xl font-semibold text-neutral-800 mb-4">Kanban Board</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <KanbanColumn title="A Fazer" tasks={mockKanbanTasks.todo} />
-                    <KanbanColumn title="Em Progresso" tasks={mockKanbanTasks.doing} />
-                    <KanbanColumn title="Concluído" tasks={mockKanbanTasks.done} />
+            {error && (
+                <div className="mb-4 p-4 bg-error/20 border border-error/50 rounded-lg text-error">
+                    <strong>Erro ao carregar dados da sprint:</strong> {error}
                 </div>
-            </div>
+            )}
+
+            {loading ? (
+                <div className="p-8 text-center text-neutral-500">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    Carregando dados da sprint...
+                </div>
+            ) : sprintDetail && kanbanTasks && burndownData && sprintMetrics ? (
+                <>
+                    <SprintSummary sprint={sprintDetail} />
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2">
+                            <BurndownChart data={burndownData} />
+                        </div>
+                        <div>
+                            <SprintMetrics metrics={sprintMetrics} />
+                        </div>
+                    </div>
+
+                    <div className="mt-6">
+                        <h2 className="text-xl font-semibold text-neutral-800 mb-4">Kanban Board</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <KanbanColumn title="A Fazer" tasks={kanbanTasks.todo} />
+                            <KanbanColumn title="Em Progresso" tasks={kanbanTasks.doing} />
+                            <KanbanColumn title="Concluído" tasks={kanbanTasks.done} />
+                        </div>
+                    </div>
+                </>
+            ) : (
+                <div className="p-8 text-center text-neutral-500">
+                    Nenhum dado de sprint disponível. Crie uma nova sprint para começar.
+                </div>
+            )}
+
+            <NewSprintModal
+                isOpen={showNewSprintModal}
+                onClose={() => setShowNewSprintModal(false)}
+                onSprintCreated={loadSprintData}
+            />
         </main>
     );
 };

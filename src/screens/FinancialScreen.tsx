@@ -1,14 +1,8 @@
-import React from 'react';
-import { 
-    mockFinancialExecutiveSummary,
-    mockUpcomingPayments,
-    mockCompletedPayments,
-    mockMonthlyCosts,
-    mockProfitability,
-    mockFinancialGoals
-} from '../data/mockData';
+import React, { useState, useEffect } from 'react';
 import { FinancialExecutiveSummary, Payment, CostCategory, ProfitabilityMetrics, FinancialGoal } from '../types';
 import { DollarSignIcon, ReceiptIcon, TrendingUpIcon, TargetIcon, UsersIcon, BriefcaseIcon, CreditCardIcon } from '../components/icons/Icons';
+import { FinancialService, FinancialMetrics } from '../lib/services/financialService';
+import ExportModal from '../components/financial/ExportModal';
 
 // Helper to format currency
 const formatCurrency = (value: number) => `R$ ${value.toLocaleString('pt-BR')}`;
@@ -159,38 +153,147 @@ const GoalCard: React.FC<{ goal: FinancialGoal }> = ({ goal }) => {
 // --- MAIN FinancialScreen Component ---
 
 const FinancialScreen: React.FC = () => {
+    const [financialData, setFinancialData] = useState<FinancialMetrics | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [lastUpdated, setLastUpdated] = useState<string>('');
+    const [showExportModal, setShowExportModal] = useState(false);
+
+    useEffect(() => {
+        loadFinancialData();
+    }, []);
+
+    const loadFinancialData = async () => {
+        setLoading(true);
+        setError(null);
+
+        const { data, error } = await FinancialService.getFinancialMetrics();
+
+        if (error) {
+            setError(error);
+            console.error('Failed to load financial data:', error);
+        } else if (data) {
+            setFinancialData(data);
+            setLastUpdated(new Date().toLocaleTimeString('pt-BR'));
+        }
+
+        setLoading(false);
+    };
+
+    // Get data source
+    const executiveSummary = financialData
+        ? FinancialService.generateExecutiveSummary(financialData)
+        : { billed: 0, received: 0, pending: 0, costs: 0, roi: 0 };
+
+    const upcomingPayments = financialData
+        ? financialData.upcomingPayments
+        : [];
+
+    const completedPayments = financialData
+        ? financialData.completedPayments
+        : [];
+
+    const monthlyCosts = financialData
+        ? financialData.monthlyCosts
+        : [];
+
+    const profitability = financialData
+        ? financialData.profitability
+        : {
+            mostProfitableProject: { name: '', roi: 0, valuePerHour: 0 },
+            mostValuableClient: { name: '', totalInvested: 0, ltv: 0 }
+        };
+
+    const financialGoals = financialData
+        ? financialData.financialGoals
+        : [];
+
     return (
         <main className="flex-1 p-4 sm:p-6 bg-neutral-100/50">
             <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
-                <h1 className="text-2xl sm:text-3xl font-bold text-neutral-800">Controle Financeiro</h1>
-                <button className="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-sm self-start sm:self-center">
-                    + Novo Recebimento
-                </button>
+                <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-neutral-800">Controle Financeiro</h1>
+                    {lastUpdated && (
+                        <p className="text-sm text-neutral-500 mt-1">
+                            Última atualização: {lastUpdated}
+                        </p>
+                    )}
+                </div>
+                <div className="flex gap-4">
+                    <button
+                        onClick={loadFinancialData}
+                        disabled={loading}
+                        className="px-4 py-2 bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                    >
+                        {loading ? 'Carregando...' : 'Atualizar'}
+                    </button>
+                    <button
+                        onClick={() => setShowExportModal(true)}
+                        className="bg-attention text-white px-4 py-2 rounded-lg font-medium hover:bg-attention/90 transition-colors shadow-sm"
+                    >
+                        📊 Exportar
+                    </button>
+                    <button className="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-sm self-start sm:self-center">
+                        + Novo Recebimento
+                    </button>
+                </div>
             </div>
-            
-            <ExecutiveSummary summary={mockFinancialExecutiveSummary} />
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div className="xl:col-span-2 space-y-6">
-                    <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
-                        <h3 className="text-lg font-semibold text-neutral-700 mb-2">Próximos Pagamentos</h3>
-                        <div className="divide-y divide-neutral-100">
-                           {mockUpcomingPayments.map(p => <PaymentListItem key={p.id} payment={p} type="upcoming" />)}
+            {error && (
+                <div className="mb-4 p-4 bg-error/20 border border-error/50 rounded-lg text-error">
+                    <strong>Erro ao carregar dados financeiros:</strong> {error}
+                </div>
+            )}
+
+            {loading ? (
+                <div className="p-8 text-center text-neutral-500">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    Carregando dados financeiros...
+                </div>
+            ) : (
+                <>
+                    <ExecutiveSummary summary={executiveSummary} />
+
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                        <div className="xl:col-span-2 space-y-6">
+                            <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
+                                <h3 className="text-lg font-semibold text-neutral-700 mb-2">Próximos Pagamentos</h3>
+                                <div className="divide-y divide-neutral-100">
+                                    {upcomingPayments.length > 0 ? (
+                                        upcomingPayments.map(p => <PaymentListItem key={p.id} payment={p} type="upcoming" />)
+                                    ) : (
+                                        <div className="p-4 text-center text-neutral-500">
+                                            Nenhum pagamento pendente
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
+                                <h3 className="text-lg font-semibold text-neutral-700 mb-2">Recebimentos Realizados</h3>
+                                <div className="divide-y divide-neutral-100">
+                                    {completedPayments.length > 0 ? (
+                                        completedPayments.map(p => <PaymentListItem key={p.id} payment={p} type="completed" />)
+                                    ) : (
+                                        <div className="p-4 text-center text-neutral-500">
+                                            Nenhum recebimento registrado
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="space-y-6">
+                            <CostsCard costs={monthlyCosts} />
+                            <ProfitabilityCard metrics={profitability} />
+                            {financialGoals.map(g => <GoalCard key={g.label} goal={g} />)}
                         </div>
                     </div>
-                     <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
-                        <h3 className="text-lg font-semibold text-neutral-700 mb-2">Recebimentos Realizados</h3>
-                        <div className="divide-y divide-neutral-100">
-                           {mockCompletedPayments.map(p => <PaymentListItem key={p.id} payment={p} type="completed" />)}
-                        </div>
-                    </div>
-                </div>
-                <div className="space-y-6">
-                    <CostsCard costs={mockMonthlyCosts} />
-                    <ProfitabilityCard metrics={mockProfitability} />
-                    {mockFinancialGoals.map(g => <GoalCard key={g.label} goal={g} />)}
-                </div>
-            </div>
+                </>
+            )}
+
+            <ExportModal
+                isOpen={showExportModal}
+                onClose={() => setShowExportModal(false)}
+            />
         </main>
     );
 };
